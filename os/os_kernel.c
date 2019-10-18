@@ -1,6 +1,7 @@
 #include "os_kernel.h"
 #include "internals/internals.h"
-#include "stm32f10x.h" // Device header
+#include "shared/device.h"  // Device header
+#include "core_cm3.h"       // Coretex m3 core header
 
 #define NUM_OF_THREADS              (3)
 #define STACK_SIZE                  (18)

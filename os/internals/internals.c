@@ -1,5 +1,6 @@
 #include "internals.h"
-#include "stm32f10x.h" // Device header
+#include "../shared/device.h" // Device header
+#include "core_cm3.h"         // Cortex m3 core header
 
 #define BUS_FREQ                    (16000000)       								//16 MHz
 
