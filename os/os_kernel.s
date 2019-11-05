@@ -1,6 +1,8 @@
                 AREA |.text|,CODE,READONLY,ALIGN=2
                 THUMB
+                PRESERVE8
                 EXTERN current_pt
+				IMPORT os_scheduler_swap
                 EXPORT SysTick_Handler
 				EXPORT os_scheduler_launch
 
@@ -10,8 +12,12 @@ SysTick_Handler             ; By invoking this interrupt the CPU automaticly sav
     LDR     R0,=current_pt  ; R0 points to current_pt
     LDR     R1,[R0]         ; R1 = current_pt
     STR     SP,[R1]         ; current_pt->stack_pt = SP
-    LDR     R1,[R1,#4]      ; R1 = current_pt->next
-    STR     R1,[R0]         ; current_pt = R1
+    ;LDR     R1,[R1,#4]      ; R1 = current_pt->next
+    ;STR     R1,[R0]         ; current_pt = R1
+    PUSH    {R0,LR}
+    BL      os_scheduler_swap
+    POP     {R0,LR}
+    LDR     R1,[R0]
     LDR     SP,[R1]         ; SP = current_pt->stack_pt
     POP     {R4-R11}        ; Restore registers of the new thread from the stack
     CPSIE   I               ; Enable interrupts

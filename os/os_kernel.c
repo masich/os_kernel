@@ -62,8 +62,15 @@ void os_kernel_launch(uint32_t quanta)
     os_scheduler_launch();
 }
 
-void os_thread_yield() 
+void os_scheduler_swap()
+{
+    current_pt = current_pt->next_pt;
+}
+
+/* //FIXME: Fix error while scheduling
+inline void os_thread_yield() 
 {
     request_scheduler_irq();
 }
+*/
 

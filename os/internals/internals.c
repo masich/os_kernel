@@ -10,43 +10,43 @@
 
 static uint32_t MILLIS_PRESCALER;
 
-void init_internals()
+inline void init_internals()
 {
     MILLIS_PRESCALER = BUS_FREQ / 1000;
 }
 
-void enable_irq()
+inline void enable_irq()
 {
     __enable_irq();
 }
 
-void disable_irq()
+inline void disable_irq()
 {
     __disable_irq();
 }
 
-void request_scheduler_irq()
+inline void request_scheduler_irq()
 {
     ICSR |= 1 << 26; //The SysTick interrupt is requested by writing 1 to bit[26] of the ICSR
 }
 
-void disable_scheduler_irq()
+inline void disable_scheduler_irq()
 {
     SysTick->CTRL = 0; //Disable SysTick interruptions
 }
 
-void reset_scheduler_counter()
+inline void reset_scheduler_counter()
 {
     SysTick->VAL = 0;  //Reset a SysTick value 
 }
 
-void set_scheduler_quanta(uint32_t quanta)
+inline void set_scheduler_quanta(uint32_t quanta)
 {
     //Count down from quanta (SysTick will be called every (quanta * MILLIS_PRESCALER) tick
     SysTick->LOAD = (quanta * MILLIS_PRESCALER) - 1; //And -1 because all counts begins from 0
 }
 
-void enable_scheduler_irq()
+inline void enable_scheduler_irq()
 {
     //Enable SysTick, use processor clock, and counting down to zero pends the SysTick handler (See SysTick control and status register)
     SYS_PRI_N3 = (SYS_PRI_N3 & RESET_SYSTICK_PRIORITY) | 0xE0000000; //Set the SysTick interruption priority 

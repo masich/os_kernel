@@ -1,4 +1,6 @@
 #include "os/os_kernel.h"
+#include "os/internals/bsp.h"
+
 #include <stdbool.h>
 
 #define QUANTA (10)
@@ -19,7 +21,6 @@ void task1()
 	while(true)
     {
         count1++;
-        os_thread_yield();
     }
 }
 void task2() 
@@ -27,10 +28,8 @@ void task2()
     while(true)
     {
         count2++;
-        os_thread_yield();
     }
 }
-
 
 int main()
 {
