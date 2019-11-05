@@ -16,6 +16,7 @@
 typedef struct tcb 
 {
     int32_t*    stack_pt;
+    int16_t     id;
     struct tcb* next_pt;
 } tcb_t;
 
@@ -26,10 +27,11 @@ tcb_t tcbs[MAX_NUM_OF_THREADS];
 int8_t last_thread_id = -1;
 tcb_t* current_pt;
 
-static void os_kernel_stack_init(int thread_id)
+static void os_kernel_stack_init(tcb_t* thread, int32_t pc_address)
 {
-    tcbs[thread_id].stack_pt = &TCB_STACK[thread_id][STACK_POINTER_INDEX];
-    tcbs[thread_id].stack_pt[XPSR_INDEX] = XPSR_RESET_VALUE;
+    thread->stack_pt = &TCB_STACK[thread->id][STACK_POINTER_INDEX];
+    thread->stack_pt[XPSR_INDEX] = XPSR_RESET_VALUE;
+    thread->stack_pt[PC_INDEX] = pc_address;
 }
 
 
@@ -37,16 +39,17 @@ bool os_kernel_add_thread(void(*task))
 {
     disable_irq();
     
-    tcb_t* new_thread = &tcbs[last_thread_id + 1];
+    uint8_t new_thread_id = last_thread_id + 1;
+    tcb_t* new_thread = &tcbs[new_thread_id];
+    new_thread->id = new_thread_id;
     if(last_thread_id >= 0)
     {
         tcbs[last_thread_id].next_pt = new_thread;
     }
     new_thread->next_pt = &tcbs[0];
     
-    os_kernel_stack_init(last_thread_id + 1);
-    new_thread->stack_pt[PC_INDEX] = (int32_t)task;
-    ++last_thread_id;
+    os_kernel_stack_init(new_thread, (int32_t)task);
+    last_thread_id = new_thread_id;
         
     if(current_pt == NULL)
     {
