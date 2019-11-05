@@ -1,9 +1,11 @@
 #include "os_kernel.h"
 #include "internals/internals.h"
 #include "shared/device.h"  // Device header
-#include "core_cm3.h"       // Coretex m3 core header
+#include "core_cm3.h"       // Cortex m3 core header
+#include <stddef.h>
 
-#define NUM_OF_THREADS              (3)
+
+#define MAX_NUM_OF_THREADS          (64)
 #define STACK_SIZE                  (18)
 #define NUM_OF_REGISTERS_TO_STORE   (16)
 
@@ -11,11 +13,18 @@
 #define XPSR_INDEX                  (NUM_OF_REGISTERS_TO_STORE - 1) //xPSR
 #define PC_INDEX                    (NUM_OF_REGISTERS_TO_STORE - 2) //PC
 
+typedef struct tcb 
+{
+    int32_t*    stack_pt;
+    struct tcb* next_pt;
+} tcb_t;
 
-int32_t TCB_STACK[NUM_OF_THREADS][STACK_SIZE];
+int32_t TCB_STACK[MAX_NUM_OF_THREADS][STACK_SIZE];
 
-tcb_t tcbs[NUM_OF_THREADS];
-tcb_t *current_pt;
+tcb_t tcbs[MAX_NUM_OF_THREADS];
+
+int8_t last_thread_id = -1;
+tcb_t* current_pt;
 
 static void os_kernel_stack_init(int thread_id)
 {
@@ -23,23 +32,26 @@ static void os_kernel_stack_init(int thread_id)
     tcbs[thread_id].stack_pt[XPSR_INDEX] = XPSR_RESET_VALUE;
 }
 
-bool os_kernel_add_threads(void(*task0) (void), void(*task1) (void), void(*task2) (void))
-{
-    //By disabling and enabling of the interruptions we can provide something like "atomic operations" 
-    disable_irq(); 
-    
-    tcbs[0].next_pt = &tcbs[1];
-    tcbs[1].next_pt = &tcbs[2];
-    tcbs[2].next_pt = &tcbs[0];
-    
-    os_kernel_stack_init(0);
-    tcbs[0].stack_pt[PC_INDEX] = (int32_t)task0; //PC
-    os_kernel_stack_init(1);
-    tcbs[1].stack_pt[PC_INDEX] = (int32_t)task1; //PC
-    os_kernel_stack_init(2);
-    tcbs[2].stack_pt[PC_INDEX] = (int32_t)task2; //PC
 
-    current_pt = &tcbs[0];
+bool os_kernel_add_thread(void(*task))
+{
+    disable_irq();
+    
+    tcb_t* new_thread = &tcbs[last_thread_id + 1];
+    if(last_thread_id >= 0)
+    {
+        tcbs[last_thread_id].next_pt = new_thread;
+    }
+    new_thread->next_pt = &tcbs[0];
+    
+    os_kernel_stack_init(last_thread_id + 1);
+    new_thread->stack_pt[PC_INDEX] = (int32_t)task;
+    ++last_thread_id;
+        
+    if(current_pt == NULL)
+    {
+        current_pt = new_thread;
+    }
     
     enable_irq();
     return true;

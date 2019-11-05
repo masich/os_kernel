@@ -4,20 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct tcb 
-{
-    int32_t*    stack_pt;
-    struct tcb* next_pt;
-} tcb_t;
-
-
 void os_kernel_launch(uint32_t quanta);
 
 void os_kernel_init(void);
 
-bool os_kernel_add_threads(void(*task0) (void),
-                           void(*tas1) (void),
-                           void(*task2) (void));
+bool os_kernel_add_thread(void(*task));
                               
 //void os_thread_yield(void);
                            

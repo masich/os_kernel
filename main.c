@@ -34,6 +34,8 @@ void task2()
 int main()
 {
     os_kernel_init();
-    os_kernel_add_threads(&task0, &task1, &task2);
+    os_kernel_add_thread(&task0);
+    os_kernel_add_thread(&task1);
+    os_kernel_add_thread(&task2);
     os_kernel_launch(QUANTA);
 }
