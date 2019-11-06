@@ -13,19 +13,40 @@
 #define XPSR_INDEX                  (NUM_OF_REGISTERS_TO_STORE - 1) //xPSR
 #define PC_INDEX                    (NUM_OF_REGISTERS_TO_STORE - 2) //PC
 
+/*
+Thread states:
+
+Start -> Ready <=> Running ->Terminated
+           \         /
+             Waiting 
+*/
+
+typedef enum 
+{
+    START = 0,
+    READY,
+    RUNNING,
+    WAITING,
+    TERMINATED
+} state_t;
+
+
 typedef struct tcb 
 {
     int32_t*    stack_pt;
     int16_t     id;
+    state_t     state;
     struct tcb* next_pt;
 } tcb_t;
 
-int32_t TCB_STACK[MAX_NUM_OF_THREADS][STACK_SIZE];
 
-tcb_t tcbs[MAX_NUM_OF_THREADS];
+static int32_t TCB_STACK[MAX_NUM_OF_THREADS][STACK_SIZE];
+static tcb_t tcbs[MAX_NUM_OF_THREADS];
+static int8_t last_thread_id = -1;
+static uint8_t threads_num = 0;
 
-int8_t last_thread_id = -1;
 tcb_t* current_pt;
+
 
 static void os_kernel_stack_init(tcb_t* thread, int32_t pc_address)
 {
@@ -42,19 +63,17 @@ bool os_kernel_add_thread(void(*task))
     uint8_t new_thread_id = last_thread_id + 1;
     tcb_t* new_thread = &tcbs[new_thread_id];
     new_thread->id = new_thread_id;
+    new_thread->state = START;
+    new_thread->next_pt = &tcbs[0];
+    
     if(last_thread_id >= 0)
     {
         tcbs[last_thread_id].next_pt = new_thread;
     }
-    new_thread->next_pt = &tcbs[0];
     
     os_kernel_stack_init(new_thread, (int32_t)task);
     last_thread_id = new_thread_id;
-        
-    if(current_pt == NULL)
-    {
-        current_pt = new_thread;
-    }
+    threads_num = new_thread_id + 1;
     
     enable_irq();
     return true;
@@ -68,18 +87,49 @@ void os_kernel_init()
     enable_irq();
 }
 
+// TODO: Do this staff in the os_scheduler_launch()
+static void os_kernel_prepare_threads()
+{
+    for(int8_t thread_index = threads_num - 1; 0 <= thread_index; --thread_index)
+    {
+        if (tcbs[thread_index].state == START)
+        {
+            tcbs[thread_index].state = READY; 
+            current_pt = &tcbs[thread_index];
+        }
+    }
+    current_pt->state = RUNNING;
+}
+
 void os_kernel_launch(uint32_t quanta)
 {
     disable_scheduler_irq();
     reset_scheduler_counter();
     set_scheduler_quanta(quanta);
+    os_kernel_prepare_threads();        
     enable_scheduler_irq();
     os_scheduler_launch();
 }
 
 void os_scheduler_swap()
 {
-    current_pt = current_pt->next_pt;
+    if (current_pt->state == RUNNING)
+    {
+        current_pt->state = READY;
+    }
+
+    uint8_t temp_threads_num = threads_num;
+    do {
+        current_pt = current_pt->next_pt;
+        if (current_pt->state == READY)
+        {
+            current_pt->state = RUNNING;
+            return;
+        }
+    } while(--temp_threads_num);
+    
+    // TODO: Instead of NULL it is suitable to use something like IDLE threads
+    current_pt = NULL;
 }
 
 /* //FIXME: Fix error while scheduling
