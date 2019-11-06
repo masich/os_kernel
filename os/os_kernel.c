@@ -30,7 +30,6 @@ typedef enum
     TERMINATED
 } state_t;
 
-
 typedef struct tcb 
 {
     int32_t*    stack_pt;
