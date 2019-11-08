@@ -3,6 +3,6 @@
 **Currently only Cortex M3 microcontrollers are supported!**
 
 Features:
-* Simple "concurrency" implementation. You can create only 3 threads for now.
-* TODO
+* Simple "concurrency" implementation.
+* Simple thread status management.
 * TODO
