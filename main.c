@@ -18,7 +18,7 @@ void task0()
 
 void task1() 
 {
-	while(true)
+    while(true)
     {
         count1++;
     }
